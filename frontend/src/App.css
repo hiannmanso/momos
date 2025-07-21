@@ -1,0 +1,9 @@
+body {
+  margin: 0;
+  font-family: 'Quicksand', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  background: transparent;
+}
+
+#root {
+  min-height: 100vh;
+}
