@@ -63,7 +63,7 @@ export default function Home() {
     return () => {
       intervalsRef.current.forEach(clearInterval);
     };
-  }, [albuns, carouselIndexes]);
+  }, [albuns]);
 
   function fetchAlbuns() {
     axios.get(`${API_BASE_URL}/api/albuns`)
