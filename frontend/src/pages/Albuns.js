@@ -4,7 +4,7 @@ import axios from 'axios';
 import './Albuns.css';
 
 // Defina a URL base da API aqui para facilitar a troca entre localhost e produção
-const API_BASE_URL = 'http://localhost:5000'; // Troque para a URL do Render em produção
+const API_BASE_URL = 'https://momos-qu63.onrender.com'; // Troque para a URL do Render em produção
 
 export default function Albuns() {
   const { album } = useParams();
@@ -91,6 +91,14 @@ export default function Albuns() {
       .catch(() => setError('Erro ao excluir a foto.'));
   }
 
+  function getImageUrl(img) {
+    if (!img) return '';
+    // Se já for uma URL absoluta (Cloudinary), retorna direto
+    if (img.startsWith('http://') || img.startsWith('https://')) return img;
+    // Senão, concatena com a base do backend
+    return API_BASE_URL + img;
+  }
+
   if (loading) return <div className="albuns-container"><div className="albuns-title">Carregando...</div></div>;
   if (!albumData) return <div className="albuns-container"><div className="albuns-title">Álbum não encontrado</div></div>;
 
@@ -108,7 +116,7 @@ export default function Albuns() {
               style={{height: '100%'}}
             />
             <img
-              src={albumData.images[current] ? (API_BASE_URL + albumData.images[current]) : ''}
+              src={getImageUrl(albumData.images[current])}
               alt={albumData.title}
               className={`carousel-img${fade ? ' fade-in' : ''}`}
               onAnimationEnd={() => setFade(false)}
@@ -151,7 +159,7 @@ export default function Albuns() {
         )}
         {hasImages && (
           <a
-            href={albumData.images[current] ? (API_BASE_URL + albumData.images[current]) : ''}
+            href={getImageUrl(albumData.images[current])}
             download={albumData.images[current]?.split('/').pop()}
             className="download-img-btn"
             style={{textDecoration: 'none'}}

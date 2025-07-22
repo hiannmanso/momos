@@ -4,6 +4,24 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { MongoClient } = require('mongodb');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+cloudinary.config({
+  cloud_name: 'dh23z6xk8',
+  api_key: '422224444864797',
+  api_secret: 'JUAEIqGq3Hgp98mwDvHFrWW--sw'
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'albuns',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp']
+  }
+});
+
+const upload = multer({ storage });
 
 const app = express();
 const PORT = 5000;
@@ -25,34 +43,6 @@ async function connectMongo() {
   console.log('Conectado ao MongoDB Atlas!');
 }
 connectMongo();
-
-// Configuração do multer para upload de imagens
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const album = req.body.album;
-    if (!album) {
-      return cb(new Error('Álbum não especificado'), null);
-    }
-    const albumPath = path.join(ALBUNS_DIR, album);
-    if (!fs.existsSync(albumPath)) {
-      fs.mkdirSync(albumPath, { recursive: true });
-    }
-    cb(null, albumPath);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
-const upload = multer({ 
-  storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Apenas arquivos de imagem são permitidos!'), false);
-    }
-  }
-});
 
 // Helper para ler e salvar o JSON dos álbuns
 function readAlbuns() {
@@ -86,12 +76,12 @@ app.post('/api/albuns/:album/upload', upload.array('images', 20), async (req, re
   }
   const albumObj = await albunsCollection.findOne({ title: album });
   if (!albumObj) return res.status(404).json({ error: 'Álbum não encontrado' });
-  const newImages = files.map(file => `/albuns/${album}/${file.filename}`);
+  const newImages = files.map(file => file.path); // file.path é a URL do Cloudinary
   await albunsCollection.updateOne(
     { title: album },
     { $push: { images: { $each: newImages } } }
   );
-  res.json({ success: true, files: files.map(f => f.filename) });
+  res.json({ success: true, files: newImages });
 });
 
 // Rota para editar título do álbum
