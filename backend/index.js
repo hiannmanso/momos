@@ -3,6 +3,7 @@ const multer = require('multer');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { MongoClient } = require('mongodb');
 
 const app = express();
 const PORT = 5000;
@@ -12,6 +13,18 @@ app.use(express.json());
 
 const ALBUNS_DIR = path.join(__dirname, '../frontend/public/albuns');
 const ALBUNS_JSON = path.join(ALBUNS_DIR, 'albuns.json');
+
+const MONGO_URI = 'mongodb+srv://hiann:momo123@momos.tjswmt3.mongodb.net/?retryWrites=true&w=majority'; // Substitua <SENHA> pela sua senha
+const client = new MongoClient(MONGO_URI);
+let albunsCollection;
+
+async function connectMongo() {
+  await client.connect();
+  const db = client.db('momo');
+  albunsCollection = db.collection('albuns');
+  console.log('Conectado ao MongoDB Atlas!');
+}
+connectMongo();
 
 // Configuração do multer para upload de imagens
 const storage = multer.diskStorage({
@@ -51,15 +64,12 @@ function saveAlbuns(data) {
 }
 
 // Rota para criar novo álbum
-app.post('/api/albuns', (req, res) => {
+app.post('/api/albuns', async (req, res) => {
   const { title } = req.body;
   if (!title) return res.status(400).json({ error: 'Título obrigatório' });
-  const albuns = readAlbuns();
-  if (albuns.find(a => a.title === title)) {
-    return res.status(400).json({ error: 'Álbum já existe' });
-  }
-  albuns.push({ title, images: [] });
-  saveAlbuns(albuns);
+  const exists = await albunsCollection.findOne({ title });
+  if (exists) return res.status(400).json({ error: 'Álbum já existe' });
+  await albunsCollection.insertOne({ title, images: [] });
   const albumPath = path.join(ALBUNS_DIR, title);
   if (!fs.existsSync(albumPath)) {
     fs.mkdirSync(albumPath, { recursive: true });
@@ -68,32 +78,33 @@ app.post('/api/albuns', (req, res) => {
 });
 
 // Rota para upload de imagens para um álbum
-app.post('/api/albuns/:album/upload', upload.array('images', 20), (req, res) => {
+app.post('/api/albuns/:album/upload', upload.array('images', 20), async (req, res) => {
   const album = req.params.album;
   const files = req.files;
   if (!files || files.length === 0) {
     return res.status(400).json({ error: 'Nenhuma imagem enviada' });
   }
-  const albuns = readAlbuns();
-  const albumObj = albuns.find(a => a.title === album);
+  const albumObj = await albunsCollection.findOne({ title: album });
   if (!albumObj) return res.status(404).json({ error: 'Álbum não encontrado' });
-  files.forEach(file => {
-    albumObj.images.push(`/albuns/${album}/${file.filename}`);
-  });
-  saveAlbuns(albuns);
+  const newImages = files.map(file => `/albuns/${album}/${file.filename}`);
+  await albunsCollection.updateOne(
+    { title: album },
+    { $push: { images: { $each: newImages } } }
+  );
   res.json({ success: true, files: files.map(f => f.filename) });
 });
 
 // Rota para editar título do álbum
-app.put('/api/albuns/:album', (req, res) => {
+app.put('/api/albuns/:album', async (req, res) => {
   const oldTitle = req.params.album;
   const { newTitle } = req.body;
   if (!newTitle) return res.status(400).json({ error: 'Novo título obrigatório' });
-  const albuns = readAlbuns();
-  const albumObj = albuns.find(a => a.title === oldTitle);
+  const albumObj = await albunsCollection.findOne({ title: oldTitle });
   if (!albumObj) return res.status(404).json({ error: 'Álbum não encontrado' });
-  albumObj.title = newTitle;
-  saveAlbuns(albuns);
+  await albunsCollection.updateOne(
+    { title: oldTitle },
+    { $set: { title: newTitle } }
+  );
   // Renomear pasta
   const oldPath = path.join(ALBUNS_DIR, oldTitle);
   const newPath = path.join(ALBUNS_DIR, newTitle);
@@ -104,22 +115,23 @@ app.put('/api/albuns/:album', (req, res) => {
 });
 
 // Rota para listar álbuns
-app.get('/api/albuns', (req, res) => {
-  const albuns = readAlbuns();
+app.get('/api/albuns', async (req, res) => {
+  const albuns = await albunsCollection.find().toArray();
   res.json(albuns);
 });
 
 // Rota para deletar uma imagem de um álbum
-app.delete('/api/albuns/:album/image', (req, res) => {
+app.delete('/api/albuns/:album/image', async (req, res) => {
   const album = req.params.album;
   const { image } = req.body;
   if (!image) return res.status(400).json({ error: 'Imagem obrigatória' });
-  const albuns = readAlbuns();
-  const albumObj = albuns.find(a => a.title === album);
+  const albumObj = await albunsCollection.findOne({ title: album });
   if (!albumObj) return res.status(404).json({ error: 'Álbum não encontrado' });
   // Remove do array de imagens
-  albumObj.images = albumObj.images.filter(img => img !== image);
-  saveAlbuns(albuns);
+  await albunsCollection.updateOne(
+    { title: album },
+    { $pull: { images: image } }
+  );
   // Remove o arquivo físico
   const imagePath = path.join(__dirname, '../frontend/public', image);
   if (fs.existsSync(imagePath)) {

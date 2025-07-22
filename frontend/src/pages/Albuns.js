@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Albuns.css';
 
+// Defina a URL base da API aqui para facilitar a troca entre localhost e produção
+const API_BASE_URL = 'https://momos-qu63.onrender.com';
+
 export default function Albuns() {
   const { album } = useParams();
   const navigate = useNavigate();
@@ -50,7 +53,7 @@ export default function Albuns() {
 
   function fetchAlbum() {
     setLoading(true);
-    axios.get('http://localhost:5000/api/albuns')
+    axios.get(`${API_BASE_URL}/api/albuns`)
       .then(res => {
         const found = res.data.find(a => a.title === album);
         setAlbumData(found);
@@ -69,7 +72,7 @@ export default function Albuns() {
     for (let file of fileInputRef.current.files) {
       formData.append('images', file);
     }
-    axios.post(`http://localhost:5000/api/albuns/${album}/upload`, formData)
+    axios.post(`${API_BASE_URL}/api/albuns/${album}/upload`, formData)
       .then(() => {
         fetchAlbum();
         fileInputRef.current.value = '';
@@ -81,7 +84,7 @@ export default function Albuns() {
   function handleDeleteImage(idx) {
     if (!window.confirm('Tem certeza que deseja excluir essa foto?')) return;
     const image = albumData.images[idx];
-    axios.delete(`http://localhost:5000/api/albuns/${album}/image`, {
+    axios.delete(`${API_BASE_URL}/api/albuns/${album}/image`, {
       data: { image }
     })
       .then(() => fetchAlbum())

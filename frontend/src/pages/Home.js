@@ -3,6 +3,9 @@ import axios from 'axios';
 import './Home.css';
 import { useNavigate } from 'react-router-dom';
 
+// Defina a URL base da API aqui para facilitar a troca entre localhost e produção
+const API_BASE_URL = 'https://momos-qu63.onrender.com';
+
 export default function Home() {
   const [albuns, setAlbuns] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -63,7 +66,7 @@ export default function Home() {
   }, [albuns, carouselIndexes]);
 
   function fetchAlbuns() {
-    axios.get('http://localhost:5000/api/albuns')
+    axios.get(`${API_BASE_URL}/api/albuns`)
       .then(res => setAlbuns(res.data))
       .catch(() => setAlbuns([]));
   }
@@ -73,7 +76,7 @@ export default function Home() {
     if (!newTitle.trim()) return;
     setLoading(true);
     setError('');
-    axios.post('http://localhost:5000/api/albuns', { title: newTitle })
+    axios.post(`${API_BASE_URL}/api/albuns`, { title: newTitle })
       .then(() => {
         setShowModal(false);
         setNewTitle('');
