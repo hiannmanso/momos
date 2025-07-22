@@ -140,6 +140,9 @@ app.delete('/api/albuns/:album/image', async (req, res) => {
   res.json({ success: true });
 });
 
+// Servir arquivos estáticos da pasta de álbuns
+app.use('/albuns', express.static(path.join(__dirname, '../frontend/public/albuns')));
+
 app.listen(PORT, () => {
   console.log(`Backend rodando em http://localhost:${PORT}`);
 }); 
