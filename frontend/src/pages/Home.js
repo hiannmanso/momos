@@ -98,7 +98,7 @@ export default function Home() {
         />
         <h1 className="home-title">Eu e meu Momo</h1>
         <p className="home-desc">
-          Aqui vai uma mensagem especial para o meu amor...
+          Esse é um album de presente pra pessoa mais incrível que eu ja conheci, meu momo. Eu queria que você soubesse o quanto você é especial pra mim, eu nunca vou cansar de te dizer o quanto eu te admiro, pela sua maneira leve de levar a vida, pelo seu carinho e atenção, por você ser meu centro de paz, ser essa mulher cuidadosa e inspiradora. Eu te amo minha vida, e independente de qualquer coisa que aconteça, a gente vai viver essa vidinha toda junto, e saber disso me faz muito feliz, feliz aniversário minha vidinha, que a vida seja tão boa com você quanto você é com a vida(e comigo tambem hehehe).
         </p>
         <button className="add-album-btn" onClick={() => setShowModal(true)}>
           + Novo Álbum
